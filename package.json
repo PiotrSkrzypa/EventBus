@@ -5,7 +5,6 @@
   "description": "Event Bus implementation that uses weak references for memory leaks avoidance and expression trees as alternative for reflection.",
   "unity": "2022.1",
   "dependencies": {
-    "com.unity.render-pipelines.universal": "17.0.3",
  },
   "author": {
     "name": "Piotr Skrzypa",
