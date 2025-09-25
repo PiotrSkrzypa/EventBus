@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
+using UnityEngine;
 using Zenject;
+using Debug = UnityEngine.Debug;
 
 namespace PSkrzypa.EventBus
 {
@@ -17,11 +20,9 @@ namespace PSkrzypa.EventBus
 
         public int TasksCount => _tasks.Count;
 
-        private ILogger _logger;
 
-        public MainThreadDispatcher(ILogger logger)
+        public MainThreadDispatcher()
         {
-            _logger = logger;
             ThreadId = Thread.CurrentThread.ManagedThreadId;
         }
 
@@ -38,7 +39,7 @@ namespace PSkrzypa.EventBus
                 {
                     continue;
                 }
-                _logger?.Log($"(Queue.Count: {_tasks.Count}) Dispatching task {task.Action}");
+                Debug.Log($"(Queue.Count: {_tasks.Count}) Dispatching task {task.Action}");
 
                 task.Invoke();
                 task.Dispose();
