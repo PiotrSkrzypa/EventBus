@@ -9,7 +9,7 @@
   "author": {
     "name": "Piotr Skrzypa",
     "email": "skrzypapiotr144@gmail.com"
-  }
+  },
   "git-dependencies": [
     "https://github.com/Mathijs-Bakker/Extenject.git?path=UnityProject/Assets/Plugins/Zenject/Source"
   ]
