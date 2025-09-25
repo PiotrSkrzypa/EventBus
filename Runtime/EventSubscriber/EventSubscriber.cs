@@ -2,6 +2,9 @@
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Runtime.ExceptionServices;
+using System.Diagnostics;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace PSkrzypa.EventBus
 {
@@ -18,8 +21,6 @@ namespace PSkrzypa.EventBus
 
         private Action<object, T> _callbackInvoker;
         private Func<object, T, bool> _predicateInvoker;
-
-        private ILogger _logger;
 
 
         public bool IsAlive
@@ -44,9 +45,8 @@ namespace PSkrzypa.EventBus
             }
         }
 
-        public EventSubscriber(ILogger logger, Type payloadType, Delegate callback, Delegate predicate = null)
+        public EventSubscriber(Type payloadType, Delegate callback, Delegate predicate = null)
         {
-            _logger = logger;
             // validate params
             if (payloadType == null)
             {
@@ -113,14 +113,14 @@ namespace PSkrzypa.EventBus
             // validate callback method info
             if (_callbackMethod == null)
             {
-                _logger.LogError($"{nameof(_callbackMethod)} is null.");
+                Debug.LogError($"{nameof(_callbackMethod)} is null.");
                 return;
             }
             if (!_callbackMethod.IsStatic &&
                ( _callbackTarget == null ||
                 !_callbackTarget.IsAlive ))
             {
-                _logger.LogWarning($"{nameof(_callbackMethod)} is not alive.");
+                Debug.LogWarning($"{nameof(_callbackMethod)} is not alive.");
                 return;
             }
 
@@ -151,7 +151,7 @@ namespace PSkrzypa.EventBus
                     //var isAccepted = (bool)_predicateMethod.Invoke(predicateTarget, new object[] {payload});
                     if (!isAccepted)
                     {
-                        _logger.LogWarning($"{nameof(_predicateMethod)} prevented calling {nameof(_callbackMethod)}");
+                        Debug.LogWarning($"{nameof(_predicateMethod)} prevented calling {nameof(_callbackMethod)}");
                         return;
                     }
                 }

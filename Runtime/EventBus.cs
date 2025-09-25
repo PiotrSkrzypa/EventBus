@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace PSkrzypa.EventBus
 {
@@ -20,14 +23,12 @@ namespace PSkrzypa.EventBus
         private bool _isPublishing;
 
         private IThreadDispatcher _dispatcher;
-        private ILogger _logger;
 
 
-        public EventBus(IThreadDispatcher threadDispatcher, ILogger logger)
+        public EventBus(IThreadDispatcher threadDispatcher)
         {
             _dispatcher = threadDispatcher ?? throw new ArgumentNullException(nameof(threadDispatcher));
-            _logger = logger;
-            _logger.Log($"Main Thread ID: {_dispatcher.ThreadId}");
+            Debug.Log($"Main Thread ID: {_dispatcher.ThreadId}");
         }
 
         /// <summary>
@@ -234,7 +235,7 @@ namespace PSkrzypa.EventBus
             // capture the type of the payload
             var key = typeof(T);
             // init new subscriber instance
-            var sub = new EventSubscriber<T>(_logger, key, callback, predicate);
+            var sub = new EventSubscriber<T>(key, callback, predicate);
 
             // check if messenger is busy with publishing payloads
             if (_isPublishing)
@@ -256,7 +257,7 @@ namespace PSkrzypa.EventBus
             // check is subscriber is valid
             if (subscriber?.IsAlive != true)
             {
-                _logger.LogError($"The {nameof(subscriber)} is null or not alive.");
+                Debug.LogError($"The {nameof(subscriber)} is null or not alive.");
                 return;
             }
 
@@ -278,7 +279,7 @@ namespace PSkrzypa.EventBus
 
             if (callbacks == null)
             {
-                _logger.LogError("Callbacks container is null!");
+                Debug.LogError("Callbacks container is null!");
                 return;
             }
 
