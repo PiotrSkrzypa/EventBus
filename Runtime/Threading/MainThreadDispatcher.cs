@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Threading;
 using UnityEngine;
-using Zenject;
-using Debug = UnityEngine.Debug;
 
 namespace PSkrzypa.EventBus
 {
-    public class MainThreadDispatcher : IThreadDispatcher, ITickable
+    public class MainThreadDispatcher : IThreadDispatcher, IDisposable
     {
         private readonly ConcurrentQueue<DispatcherTask> _tasks = new ConcurrentQueue<DispatcherTask>();
 
@@ -28,6 +25,10 @@ namespace PSkrzypa.EventBus
 
         public void Dispatch(Delegate action, object[] payload)
         {
+            if (_tasks.Count == 0)
+            {
+                UpdateCaller.AddUpdateCallback(Tick);
+            }
             _tasks.Enqueue(new DispatcherTask(action, payload));
         }
 
@@ -44,6 +45,11 @@ namespace PSkrzypa.EventBus
                 task.Invoke();
                 task.Dispose();
             }
+        }
+
+        public void Dispose()
+        {
+            UpdateCaller.RemoveUpdateCallback(Tick);
         }
     }
 }

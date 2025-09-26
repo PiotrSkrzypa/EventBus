@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace PSkrzypa.EventBus
 {
@@ -252,7 +250,7 @@ namespace PSkrzypa.EventBus
         /// Adds subscriber into subscribers list 
         /// </summary>
         /// <param name="subscriber"></param>
-        private void SubscribeInternal(IEventSubscriber subscriber) 
+        private void SubscribeInternal(IEventSubscriber subscriber)
         {
             // check is subscriber is valid
             if (subscriber?.IsAlive != true)
