@@ -1,9 +1,7 @@
 {
     "name": "EventBus",
     "rootNamespace": "",
-    "references": [
-        "Logger"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
