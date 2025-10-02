@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace PSkrzypa.EventBus
+namespace PSkrzypa.EventBus.EventSubscriber
 {
-    internal interface IEventSubscriber
+    public interface IEventSubscriber
     {
         int Id { get; }
         bool IsAlive { get; }

@@ -1,43 +1,25 @@
 ﻿using System;
-using System.Reflection;
-using System.Linq.Expressions;
 using System.Runtime.ExceptionServices;
-using System.Diagnostics;
-using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace PSkrzypa.EventBus
+namespace PSkrzypa.EventBus.EventSubscriber
 {
-    class EventSubscriber<T> : IEventSubscriber where T : IEventPayload
+    public class EventSubscriber<T> : IEventSubscriber where T : IEventPayload
     {
         public int Id { get; }
         public Type PayloadType { get; }
 
-        private WeakReference _callbackTarget;
-        private MethodInfo _callbackMethod;
+        private Action<T> _callback;
 
-        private WeakReference _predicateTarget;
-        private MethodInfo _predicateMethod;
+        private Predicate<T> _predicate;
 
-        private Action<object, T> _callbackInvoker;
-        private Func<object, T, bool> _predicateInvoker;
 
 
         public bool IsAlive
         {
             get
             {
-                if (_callbackMethod == null)
-                {
-                    return false;
-                }
-                if (_callbackMethod.IsStatic)
-                {
-                    return true;
-                }
-                if (_callbackTarget == null ||
-                   !_callbackTarget.IsAlive ||
-                   _callbackTarget.Target == null)
+                if (_callback == null)
                 {
                     return false;
                 }
@@ -45,7 +27,7 @@ namespace PSkrzypa.EventBus
             }
         }
 
-        public EventSubscriber(Type payloadType, Delegate callback, Delegate predicate = null)
+        public EventSubscriber(Type payloadType, Action<T> callback, Predicate<T> predicate = null)
         {
             // validate params
             if (payloadType == null)
@@ -60,98 +42,30 @@ namespace PSkrzypa.EventBus
             // assign values to vars
             PayloadType = payloadType;
             Id = callback.GetHashCode();
-            _callbackMethod = callback.Method;
-
-            // check if callback method is not a static method
-            if (!_callbackMethod.IsStatic &&
-               callback.Target != null)
-            {
-                // init weak reference to callback owner
-                _callbackTarget = new WeakReference(callback.Target);
-            }
-
-            var targetParam = Expression.Parameter(typeof(object), "target");
-            var argParam = Expression.Parameter(PayloadType, "arg");
-
-            var call = Expression.Call(
-            Expression.Convert(targetParam, _callbackMethod.DeclaringType!),
-            _callbackMethod,
-            argParam
-        );
-
-            var actionType = typeof(Action<,>).MakeGenericType(typeof(object), payloadType);
-
-            _callbackInvoker = Expression.Lambda<Action<object, T>>(call, targetParam, argParam).Compile();
-            // --- init predicate ---
-            if (predicate == null)
-            {
-                return;
-            }
-            _predicateMethod = predicate.Method;
-
-            if (!_predicateMethod.IsStatic &&
-               !Equals(predicate.Target, callback.Target))
-            {
-                _predicateTarget = new WeakReference(predicate.Target);
-            }
-            var predicateTargetParam = Expression.Parameter(typeof(object), "target");
-            var predicateArgParam = Expression.Parameter(PayloadType, "arg");
-
-            var predicateCall = Expression.Call(
-            Expression.Convert(predicateTargetParam, _predicateMethod.DeclaringType!),
-            _predicateMethod,
-            predicateArgParam
-        );
-
-            var predicateType = typeof(Func<,,>).MakeGenericType(typeof(object), payloadType, typeof(bool));
-
-            _predicateInvoker = (Func<object, T, bool>)Expression.Lambda(predicateType, predicateCall, predicateTargetParam, predicateArgParam).Compile();
+            _callback = callback;
+            _predicate = predicate;
+           
 
         }
         public void Invoke(T payload)
         {
-            // validate callback method info
-            if (_callbackMethod == null)
+            // validate callback method
+            if (_callback == null)
             {
-                Debug.LogError($"{nameof(_callbackMethod)} is null.");
+                Debug.LogError($"{nameof(_callback)} is null.");
                 return;
             }
-            if (!_callbackMethod.IsStatic &&
-               ( _callbackTarget == null ||
-                !_callbackTarget.IsAlive ))
-            {
-                Debug.LogWarning($"{nameof(_callbackMethod)} is not alive.");
-                return;
-            }
+           
 
-            // get reference to the predicate function owner
-            if (_predicateMethod != null)
+            if (_predicate != null)
             {
-                object predicateTarget = null;
-                if (!_predicateMethod.IsStatic)
-                {
-                    if (_predicateTarget != null &&
-                       _predicateTarget.IsAlive)
-                    {
-                        predicateTarget = _predicateTarget.Target;
-                    }
-                    else if (_callbackTarget != null &&
-                            _callbackTarget.IsAlive)
-                    {
-                        predicateTarget = _callbackTarget.Target;
-                    }
-                }
-
                 // check if predicate returned 'true'
                 try
                 {
-
-
-                    var isAccepted = (bool)_predicateInvoker(predicateTarget, payload);
-                    //var isAccepted = (bool)_predicateMethod.Invoke(predicateTarget, new object[] {payload});
+                    var isAccepted = _predicate.Invoke(payload);
                     if (!isAccepted)
                     {
-                        Debug.LogWarning($"{nameof(_predicateMethod)} prevented calling {nameof(_callbackMethod)}");
+                        Debug.LogWarning($"{nameof(_predicate)} prevented calling {nameof(_callback)}");
                         return;
                     }
                 }
@@ -164,17 +78,9 @@ namespace PSkrzypa.EventBus
             }
 
             // invoke callback method
-            object callbackTarget = null;
-            if (!_callbackMethod.IsStatic &&
-               _callbackTarget != null && _callbackTarget.IsAlive)
-            {
-                callbackTarget = _callbackTarget.Target;
-            }
-
             try
             {
-                _callbackInvoker(callbackTarget, payload);
-                //_callbackMethod.Invoke(callbackTarget, new object[] { payload });
+                _callback(payload);
             }
             catch (Exception ex)
             {
@@ -186,22 +92,10 @@ namespace PSkrzypa.EventBus
 
         public void Dispose()
         {
-            _callbackMethod = null;
-            if (_callbackTarget != null)
-            {
-                _callbackTarget.Target = null;
-                _callbackTarget = null;
-            }
+            _callback = null;
 
-            _predicateMethod = null;
-            if (_predicateTarget != null)
-            {
-                _predicateTarget.Target = null;
-                _predicateTarget = null;
-            }
-
-            _callbackInvoker = null;
-            _predicateInvoker = null;
+            _predicate = null;
+           
         }
 
         public void Invoke(IEventPayload payload)

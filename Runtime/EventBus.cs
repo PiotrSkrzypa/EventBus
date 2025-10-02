@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using PSkrzypa.EventBus.EventSubscriber;
 using UnityEngine;
 
 namespace PSkrzypa.EventBus
 {
     public class EventBus : IEventBus, IDisposable
     {
+        private readonly IEventSubscriberFactory _subscriberFactory;
         // Subscribers Collection
         private readonly Dictionary<Type, Dictionary<int, IEventSubscriber>> _subscribersSet =
             new();
@@ -23,8 +25,9 @@ namespace PSkrzypa.EventBus
         private IThreadDispatcher _dispatcher;
 
 
-        public EventBus(IThreadDispatcher threadDispatcher)
+        public EventBus(IEventSubscriberFactory eventSubscriberFactory, IThreadDispatcher threadDispatcher)
         {
+            _subscriberFactory = eventSubscriberFactory ?? new EventSubscriberFactory();
             _dispatcher = threadDispatcher ?? throw new ArgumentNullException(nameof(threadDispatcher));
             Debug.Log($"Main Thread ID: {_dispatcher.ThreadId}");
         }
@@ -233,7 +236,7 @@ namespace PSkrzypa.EventBus
             // capture the type of the payload
             var key = typeof(T);
             // init new subscriber instance
-            var sub = new EventSubscriber<T>(key, callback, predicate);
+            var sub = _subscriberFactory.CreateSubscriber(key, callback, predicate);
 
             // check if messenger is busy with publishing payloads
             if (_isPublishing)
